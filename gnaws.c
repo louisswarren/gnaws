@@ -38,7 +38,7 @@ handle(int fd)
 		} else if (errno != EINTR) {
 			break;
 		}
-	} while (1);
+	} while (p < _binary_response_http_end);
 
 	close(fd);
 }
