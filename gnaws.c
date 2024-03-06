@@ -10,19 +10,19 @@
 #include <sys/types.h>
 #include <signal.h>
 
-extern const char _binary_response_http_start[], _binary_response_http_end[];
+int
+just_(const char *funcname, int r)
+{
+	if (r < 0) {
+		perror(funcname);
+		exit(1);
+	}
+	return r;
+}
+#define just(FUNC, ...) just_(#FUNC, FUNC(__VA_ARGS__));
 
-#define die(...) do { \
-		fprintf(stderr, __VA_ARGS__); \
-		fprintf(stderr, "\n"); \
-		exit(1); \
-	} while(0)
-#define commit(MSG, EXPR) do { \
-		if ((EXPR) < 0) { \
-			perror(MSG); \
-			return 1; \
-		} \
-	} while(0)
+extern const char _binary_response_http_start[];
+extern const char _binary_response_http_end[];
 
 static
 void
@@ -54,22 +54,19 @@ main(void)
 
 	signal(SIGCHLD, SIG_IGN);
 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-	if (sockfd < 0)
-		die("Failed to create socket");
+	sockfd = just(socket, AF_INET, SOCK_STREAM, 0);
 
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servaddr.sin_port = htons(8080);
 
-	commit("bind", bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)));
+	just(bind, sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
 
 	while (1) {
-		commit("listen", listen(sockfd, SOMAXCONN));
+		just(listen, sockfd, SOMAXCONN);
 		printf("Waiting ...\n");
-		commit("accept", connfd = accept(sockfd, (struct sockaddr *)&cli, &len));
-		commit("fork", handle_proc = fork());
+		connfd = just(accept, sockfd, (struct sockaddr *)&cli, &len);
+		handle_proc = just(fork, );
 
 		if (!handle_proc) {
 			handle(connfd);
