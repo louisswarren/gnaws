@@ -1,0 +1,6 @@
+printf "HTTP/1.1 200 OK\r\n"
+printf "Content-Type: text/html\r\n"
+printf "Connection: Closed\r\n"
+printf "Content-Length: %s\r\n" "$(wc -c < "$1")"
+printf "\r\n"
+cat "$1"
