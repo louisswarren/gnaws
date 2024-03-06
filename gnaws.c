@@ -74,6 +74,8 @@ main(void)
 		if (!handle_proc) {
 			handle(connfd);
 			_Exit(0);
+		} else {
+			close(connfd);
 		}
 	}
 	close(sockfd);
