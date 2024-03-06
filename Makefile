@@ -11,13 +11,10 @@ run: gnaws
 
 .PHONY: test
 test: index.html gnaws
+	-pkill gnaws
 	./gnaws &
-	curl -s localhost:8080 | diff -q $< -
-	curl -s localhost:8080 | diff -q $< -
-	curl -s localhost:8080 | diff -q $< -
-	curl -s localhost:8080 | diff -q $< -
-	curl -s localhost:8080 | diff -q $< -
-	pkill gnaws
+	@for x in `seq 10`; do curl -s localhost:8080 | diff $< - || (pkill gnaws && false); done
+	-pkill gnaws
 
 gnaws: gnaws.o response.o
 

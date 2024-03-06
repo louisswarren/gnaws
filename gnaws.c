@@ -15,7 +15,7 @@ just_(const char *funcname, int r)
 {
 	if (r < 0) {
 		perror(funcname);
-		exit(1);
+		_exit(1);
 	}
 	return r;
 }
@@ -28,7 +28,7 @@ static
 void
 handle(int fd)
 {
-	printf("Serving\n");
+	//printf("Serving\n");
 
 	const char *p = _binary_response_http_start;
 	do {
@@ -36,6 +36,7 @@ handle(int fd)
 		if (n >= 0) {
 			p += n;
 		} else if (errno != EINTR) {
+			perror("write");
 			break;
 		}
 	} while (p < _binary_response_http_end);
@@ -62,15 +63,15 @@ main(void)
 
 	just(bind, sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
 
+	//printf("Waiting ...\n");
 	while (1) {
 		just(listen, sockfd, SOMAXCONN);
-		printf("Waiting ...\n");
 		connfd = just(accept, sockfd, (struct sockaddr *)&cli, &len);
 		handle_proc = just(fork, );
 
 		if (!handle_proc) {
 			handle(connfd);
-			_Exit(0);
+			_exit(0);
 		} else {
 			close(connfd);
 		}
