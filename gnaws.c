@@ -45,8 +45,21 @@ handle(int fd)
 }
 
 int
-main(void)
+main(int argc, const char *argv[])
 {
+	uint16_t port = 8080;
+
+	if (argc > 1) {
+		char *end;
+		long port_spec = strtol(argv[1], &end, 0);
+		if (!*end && port_spec > 0 && port_spec < 32768) {
+			port = (uint16_t)port_spec;
+		} else {
+			fprintf(stderr, "Invalid port specified\n");
+			return 1;
+		}
+	}
+
 	pid_t handle_proc;
 
 	struct sockaddr_in servaddr = {0}, cli = {0};
@@ -59,7 +72,7 @@ main(void)
 
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port = htons(8080);
+	servaddr.sin_port = htons(port);
 
 	just(bind, sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
 
