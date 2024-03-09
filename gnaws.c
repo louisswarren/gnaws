@@ -56,7 +56,6 @@ serve(int fd)
 	} while (p < _binary_response_http_end);
 
 	shutdown(fd, SHUT_WR);
-	close(fd);
 }
 
 int
@@ -108,14 +107,13 @@ main(int argc, const char *argv[])
 			case ENOMEM:
 				perror("fork");
 		);
-		if (serve_proc < 0) continue;
-
-		if (!serve_proc) {
+		if (serve_proc == 0) {
 			serve(connfd);
-			_exit(0);
-		} else {
 			close(connfd);
+			_exit(0);
 		}
+		/* if serve_prc == -1 or serve_proc > 0 */
+		close(connfd);
 	}
 	__builtin_unreachable();
 	close(sockfd);
