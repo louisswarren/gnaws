@@ -1,25 +1,45 @@
 #include <stdio.h>
-#include <netdb.h>
 #include <netinet/in.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include <unistd.h>
 #include <errno.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <signal.h>
 
-int
-just_(const char *funcname, int r)
-{
-	if (r < 0) {
-		perror(funcname);
-		_exit(1);
-	}
-	return r;
-}
-#define just(FUNC, ...) just_(#FUNC, FUNC(__VA_ARGS__));
+/* Behaviour:
+	* EINTR is always retried
+	* Unhandled errors exit
+	* Handlers with a `continue` are retried
+*/
+#define trycatch(expr, ...) do { \
+		if ((long)(expr) < 0) { \
+			switch (errno) { \
+			case EINTR: \
+				continue; \
+			__VA_ARGS__ \
+				break; \
+			default: \
+				perror(#expr); \
+				_exit(1); \
+				break; \
+			} \
+		} \
+		break; \
+	} while(1)
+
+#define try(expr) do { \
+		if ((long)(expr) < 0) { \
+			switch (errno) { \
+			case EINTR: \
+				continue; \
+			default: \
+				perror(#expr); \
+				_exit(1); \
+				break; \
+			} \
+		} \
+		break; \
+	} while(1)
 
 extern const char _binary_response_http_start[];
 extern const char _binary_response_http_end[];
@@ -28,17 +48,11 @@ static
 void
 handle(int fd)
 {
-	//printf("Serving\n");
-
 	const char *p = _binary_response_http_start;
 	do {
-		ssize_t n = write(fd, p, _binary_response_http_end - p);
-		if (n >= 0) {
-			p += n;
-		} else if (errno != EINTR) {
-			perror("write");
-			break;
-		}
+		ssize_t n;
+		try(n = write(fd, p, _binary_response_http_end - p));
+		p += n;
 	} while (p < _binary_response_http_end);
 
 	shutdown(fd, SHUT_WR);
@@ -67,21 +81,34 @@ main(int argc, const char *argv[])
 	int sockfd, connfd;
 	unsigned int len = sizeof(cli);
 
-	signal(SIGCHLD, SIG_IGN);
+	//assert((long)SIG_ERR < 0);
+	try(signal(SIGCHLD, SIG_IGN));
 
-	sockfd = just(socket, AF_INET, SOCK_STREAM, 0);
+	try(sockfd = socket(AF_INET, SOCK_STREAM, 0));
 
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servaddr.sin_port = htons(port);
 
-	just(bind, sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
+	try(bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)));
 
-	//printf("Waiting ...\n");
 	while (1) {
-		just(listen, sockfd, SOMAXCONN);
-		connfd = just(accept, sockfd, (struct sockaddr *)&cli, &len);
-		handle_proc = just(fork, );
+		try(listen(sockfd, SOMAXCONN));
+		trycatch(connfd = accept(sockfd, (struct sockaddr *)&cli, &len),
+			case EMFILE:
+			case ENFILE:
+			case ENOMEM:
+			case EPROTO:
+				perror("accept");
+		);
+		if (connfd < 0) continue;
+
+		trycatch(handle_proc = fork(),
+			case EAGAIN:
+			case ENOMEM:
+				perror("fork");
+		);
+		if (handle_proc < 0) continue;
 
 		if (!handle_proc) {
 			handle(connfd);
@@ -90,5 +117,7 @@ main(int argc, const char *argv[])
 			close(connfd);
 		}
 	}
+	__builtin_unreachable();
 	close(sockfd);
+	return 0;
 }
