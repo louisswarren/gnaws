@@ -46,7 +46,7 @@ extern const char _binary_response_http_end[];
 
 static
 void
-handle(int fd)
+serve(int fd)
 {
 	const char *p = _binary_response_http_start;
 	do {
@@ -75,7 +75,7 @@ main(int argc, const char *argv[])
 		}
 	}
 
-	pid_t handle_proc;
+	pid_t serve_proc;
 
 	struct sockaddr_in servaddr = {0}, cli = {0};
 	int sockfd, connfd;
@@ -103,15 +103,15 @@ main(int argc, const char *argv[])
 		);
 		if (connfd < 0) continue;
 
-		trycatch(handle_proc = fork(),
+		trycatch(serve_proc = fork(),
 			case EAGAIN:
 			case ENOMEM:
 				perror("fork");
 		);
-		if (handle_proc < 0) continue;
+		if (serve_proc < 0) continue;
 
-		if (!handle_proc) {
-			handle(connfd);
+		if (!serve_proc) {
+			serve(connfd);
 			_exit(0);
 		} else {
 			close(connfd);
