@@ -41,6 +41,7 @@ handle(int fd)
 		}
 	} while (p < _binary_response_http_end);
 
+	shutdown(fd, SHUT_WR);
 	close(fd);
 }
 
