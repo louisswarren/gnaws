@@ -2,7 +2,7 @@
 
 PORT="$(( 1000 + ( $RANDOM % ( 32768 - 1000 ) ) ))"
 
-./gnaws "$PORT" &
+LD_PRELOAD=./sysfuzz.so ./gnaws "$PORT" > sysfuzz.log &
 trap "kill $!" EXIT HUP INT QUIT ABRT KILL ALRM TERM
 
 for x in `seq 1000`; do

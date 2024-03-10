@@ -1,0 +1,6 @@
+gnaws
+response.http
+
+*.o
+*.so
+*.log

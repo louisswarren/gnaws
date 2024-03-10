@@ -10,7 +10,7 @@ run: gnaws
 	./$<
 
 .PHONY: test
-test: test.bash gnaws
+test: test.bash gnaws sysfuzz.so
 	./$<
 
 gnaws: gnaws.o response.o
@@ -22,6 +22,9 @@ response.o: response.http
 
 response.http: index.html make_response.sh
 	./make_response.sh $< > $@
+
+sysfuzz.so: sysfuzz.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared -fPIC -o $@ $<
 
 .PHONY: clean
 clean:
