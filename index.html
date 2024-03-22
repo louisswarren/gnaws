@@ -2,12 +2,177 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
     <title>GNAWS</title>
+		<style>
+			body {
+				max-width: 42em;
+				background-color: #aaabbb;
+				background-size: contain;
+				background-repeat: no-repeat;
+				font-family: sans-serif;
+				margin: 0 auto;
+			}
+			header, nav, main {
+				background-color: #eeefff;
+				padding: 0 2rem 10pt 2rem;
+				margin: 0;
+				overflow: auto;
+			}
+			header h1 {
+				text-align: center;
+				font-variant: small-caps;
+				margin-bottom: 2pt;
+			}
+			nav {
+				padding: 10pt 2em;
+				background-color: #dddddd;
+			}
+			nav a {
+				display: inline-block;
+				padding: 4pt 1em;
+				background-color: #ddddff;
+				font-weight: bold;
+				text-decoration: none;
+				color: #444422;
+			}
+			nav a.selected {
+				background-color: #cccccc;
+			}
+			main {
+ 				padding-bottom: 2em;
+			}
+			main p {
+				text-align: justify;
+			}
+			pre {
+				white-space: pre-wrap;
+				font-family: monospace;
+				color: #303030;
+				background-color: #dddddd;
+				padding: 1em;
+			}
+			.hidden {
+				display: None;
+			}
+			pre.clang .Constant { color: #ff6060; }
+			pre.clang .Statement { color: #c00000; }
+			pre.clang .Type { color: #804000; }
+			pre.clang .String { color: #008000; }
+			pre.clang .Conditional { color: #c000c0; }
+			pre.clang .Repeat { color: #804000; }
+			pre.clang .Label { color: #804000; }
+			pre.clang .Number { color: #ff6060; }
+			pre.clang .StorageClass { color: #804000; }
+		</style>
+		<script>
+			var selected = 0;
+
+			function paginate() {
+				var main = document.getElementsByTagName('main')[0];
+				var nav = document.createElement('nav');
+			  main.parentElement.insertBefore(nav, main);
+				var subsequent = false;
+				for (var i = 0; i < main.children.length; i++) {
+					elem = main.children[i];
+					var link = document.createElement('a')
+					var path;
+					if (subsequent) {
+						link.innerHTML = elem.getElementsByTagName('h2')[0].innerHTML;
+						path = '/' + link.innerHTML.toLowerCase().replace(' ', '-');
+					} else {
+						link.innerHTML = "Home";
+						path = './';
+					}
+					link.href = path;
+					if (window.location.pathname == path) {
+						link.classList.add('selected')
+						selected = i;
+					} else {
+						elem.classList.add('hidden');
+					}
+
+					(function(i, link) {
+						link.onclick = function(e) {
+							var main = document.getElementsByTagName('main')[0];
+							main.children[selected].classList.add('hidden');
+							main.children[i].classList.remove('hidden');
+							var nav = document.getElementsByTagName('nav')[0]
+							nav.children[selected].classList.remove('selected')
+							nav.children[i].classList.add('selected')
+							selected = i;
+							e.preventDefault();
+							history.pushState("", "", link.href);
+						}
+					})(i, link)
+					nav.appendChild(link);
+					subsequent = true;
+				}
+			}
+			if (window.location.pathname != '/noscript') {
+				window.onload = paginate;
+			}
+		</script>
   </head>
   <body>
-		<h1>GNAWS' not a web server.</h1>
-		<p>
-			It may seem like your browser has contacted a web server. However, I assure you, it did not. This web page was returned by a binary that does not understand HTTP. In fact, your request was completely ignored.
-		</p>
+		<header>
+			<h1>GNAWS' not a web server</h1>
+		</header>
+		<main>
+			<section>
+				<p>
+					It may seem like your browser has contacted a web server. However, I
+					assure you, it did not. This web page was returned by a binary that
+					does not understand HTTP. In fact, your request was completely
+					ignored.
+				</p>
+			</section>
+			<section>
+				<h2>Code</h2>
+				<p>
+					The code that served this page is (equivalent to) the following.
+				</p>
+<pre class="clang">
+<span class="StorageClass">static</span>
+<span class="Type">void</span>
+serve(<span class="Type">int</span> fd)
+{
+	<span class="StorageClass">const</span> <span class="Type">char</span> *p = _binary_response_http_start;
+	<span class="Repeat">do</span> {
+		<span class="Type">ssize_t</span> n;
+		<span class="Repeat">do</span> {
+			n = write(fd, p, _binary_response_http_end - p);
+			<span class="Conditional">if</span> (n &lt; <span class="Number">0</span>) {
+				<span class="Conditional">switch</span> (errno) {
+				<span class="Label">case</span> <span class="Constant">EINTR</span>:
+					<span class="Statement">continue</span>;
+				<span class="Label">default</span>:
+					perror(<span class="String">&quot;write&quot;</span>);
+					_exit(<span class="Number">1</span>);
+					<span class="Statement">break</span>;
+				}
+			}
+		} <span class="Repeat">while</span>(<span class="Number">0</span>);
+		p += n;
+	} <span class="Repeat">while</span> (p &lt; _binary_response_http_end);
+
+	shutdown(fd, SHUT_WR);
+	close(fd);
+}
+</pre>
+		</section>
+		<section>
+			<h2>Motivation and idea</h2>
+			<p>
+				Clearly, it's very hard to attack a program that takes no input.
+			</p>
+		</section>
+		<section>
+			<h2>Author</h2>
+			<p>
+				<a href="https://lsw.nz">Louis Warren</a>
+			</p>
+		</section>
+		</main>
   </body>
 </html>
